@@ -1,0 +1,781 @@
+[
+    {
+        "id": "fb8178f3789d4b3d",
+        "type": "tab",
+        "label": "MQTT_test",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "5b6540f2f320c88f",
+        "type": "mqtt in",
+        "z": "fb8178f3789d4b3d",
+        "name": "MQTT_SETUP",
+        "topic": "desk/1/presence",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "1caff872901a55b2",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 429.5,
+        "y": 706,
+        "wires": [
+            [
+                "93b2d85a28b782e9",
+                "e1b79d3ae6349fce"
+            ]
+        ]
+    },
+    {
+        "id": "93b2d85a28b782e9",
+        "type": "debug",
+        "z": "fb8178f3789d4b3d",
+        "name": "debug 6",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 421.5,
+        "y": 642,
+        "wires": []
+    },
+    {
+        "id": "e4f452aee905bb84",
+        "type": "mqtt out",
+        "z": "fb8178f3789d4b3d",
+        "name": "MQTT_SEND_TEST_SIGNAL",
+        "topic": "desk/1/presence",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "1caff872901a55b2",
+        "x": 688.5,
+        "y": 776,
+        "wires": []
+    },
+    {
+        "id": "4d2400cc9e856b8b",
+        "type": "inject",
+        "z": "fb8178f3789d4b3d",
+        "name": "SEND_MQTT",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "test/topic",
+        "payload": "",
+        "payloadType": "date",
+        "x": 443.5,
+        "y": 822,
+        "wires": [
+            [
+                "e4f452aee905bb84"
+            ]
+        ]
+    },
+    {
+        "id": "e1b79d3ae6349fce",
+        "type": "function",
+        "z": "fb8178f3789d4b3d",
+        "name": "Toggle Logic",
+        "func": "// прочети текущото състояние от flow context\nvar currentState = flow.get('deskState') || 'stood';\nvar lastChangeTime = flow.get('lastChangeTime') || Date.now();\n\n// изчисли продължителността на предишното състояние (в секунди)\nvar durationSeconds = Math.floor((Date.now() - lastChangeTime) / 1000);\n\n// toggle към ново състояние\nvar newState = (currentState === 'stood') ? 'sat' : 'stood';\n\n// запази новото състояние + нов старт час\nflow.set('deskState', newState);\nflow.set('lastChangeTime', Date.now());\n\n// трупай времето в running totals, САМО ако работна сесия тече в момента\nvar sessionActive = flow.get('sessionActive') || false;\nif (sessionActive) {\n    if (currentState === 'sat') {\n        flow.set('sessionSatSeconds', (flow.get('sessionSatSeconds') || 0) + durationSeconds);\n    } else {\n        flow.set('sessionStoodSeconds', (flow.get('sessionStoodSeconds') || 0) + durationSeconds);\n    }\n}\n\n// съобщение 1 — за live dashboard (текущ статус, показва НОВОТО състояние)\nvar liveMsg = {\n    payload: {\n        event_type: newState,\n        timestamp: new Date().toISOString()\n    }\n};\n\n// съобщение 2 — за INSERT (завършената сесия, ПРЕДИШНОТО състояние + продължителност)\nvar insertMsg = {\n    payload: {\n        event_type: currentState,\n        duration_seconds: durationSeconds,\n        timestamp: new Date(lastChangeTime).toISOString()\n    }\n};\n\nreturn [liveMsg, insertMsg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 798.5,
+        "y": 560,
+        "wires": [
+            [
+                "100cb28617d8ca64",
+                "fef385d30812c8d3"
+            ],
+            [
+                "254c11b0c2c524e8"
+            ]
+        ]
+    },
+    {
+        "id": "100cb28617d8ca64",
+        "type": "debug",
+        "z": "fb8178f3789d4b3d",
+        "name": "debug 7",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 787.5,
+        "y": 498,
+        "wires": []
+    },
+    {
+        "id": "248c28bc920af69c",
+        "type": "postgresql",
+        "z": "fb8178f3789d4b3d",
+        "name": "SERVER_CONNECTION",
+        "query": "",
+        "postgreSQLConfig": "ecb35dc2f81ac1d2",
+        "split": false,
+        "rowsPerMsg": 1,
+        "outputs": 1,
+        "x": 1429.5,
+        "y": 796,
+        "wires": [
+            [
+                "c08752fab6e3a507",
+                "04b7cccf05c13134"
+            ]
+        ]
+    },
+    {
+        "id": "254c11b0c2c524e8",
+        "type": "function",
+        "z": "fb8178f3789d4b3d",
+        "name": "BUILD_INSERT_FUNC",
+        "func": "msg.query = \"INSERT INTO desk_sessions (event_type, duration_seconds, timestamp) VALUES ($1, $2, $3)\";\nmsg.params = [msg.payload.event_type, msg.payload.duration_seconds, msg.payload.timestamp];\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1091.5,
+        "y": 565,
+        "wires": [
+            [
+                "248c28bc920af69c"
+            ]
+        ]
+    },
+    {
+        "id": "c08752fab6e3a507",
+        "type": "debug",
+        "z": "fb8178f3789d4b3d",
+        "name": "debug 8",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1359.5,
+        "y": 468,
+        "wires": []
+    },
+    {
+        "id": "3726b9ea1b853925",
+        "type": "ui-text",
+        "z": "fb8178f3789d4b3d",
+        "group": "bccd17396fda2f7e",
+        "order": 1,
+        "width": "3",
+        "height": "1",
+        "name": "",
+        "label": "Current status : ",
+        "format": "{{msg.payload}}",
+        "layout": "col-center",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#717171",
+        "wrapText": false,
+        "className": "",
+        "value": "payload",
+        "valueType": "msg",
+        "x": 1149.5,
+        "y": 729,
+        "wires": []
+    },
+    {
+        "id": "64ca0bd4f1795dd3",
+        "type": "postgresql",
+        "z": "fb8178f3789d4b3d",
+        "name": "",
+        "query": "SELECT id, event_type, timestamp FROM desk_sessions ORDER BY timestamp DESC LIMIT 10",
+        "postgreSQLConfig": "ecb35dc2f81ac1d2",
+        "split": false,
+        "rowsPerMsg": 1,
+        "outputs": 1,
+        "x": 1332.5,
+        "y": 992,
+        "wires": [
+            [
+                "fb15c97858eec39f"
+            ]
+        ]
+    },
+    {
+        "id": "04b7cccf05c13134",
+        "type": "function",
+        "z": "fb8178f3789d4b3d",
+        "name": "SELECT last 10",
+        "func": "msg.query = \"SELECT * FROM desk_sessions ORDER BY id DESC LIMIT 5\";\ndelete msg.params;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1141.5,
+        "y": 994,
+        "wires": [
+            [
+                "64ca0bd4f1795dd3"
+            ]
+        ]
+    },
+    {
+        "id": "fb15c97858eec39f",
+        "type": "ui-table",
+        "z": "fb8178f3789d4b3d",
+        "group": "f5de675168dfc86c",
+        "name": "Last presence",
+        "label": "",
+        "order": 1,
+        "width": "6",
+        "height": "6",
+        "maxrows": 0,
+        "passthru": false,
+        "autocols": true,
+        "showSearch": false,
+        "deselect": true,
+        "selectionType": "none",
+        "columns": [],
+        "mobileBreakpoint": "md",
+        "mobileBreakpointType": "defaults",
+        "action": "replace",
+        "className": "",
+        "x": 1573,
+        "y": 1059,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "e7f9a27c2cb61552",
+        "type": "inject",
+        "z": "fb8178f3789d4b3d",
+        "name": "Every 1s",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "1",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 431.5,
+        "y": 1046,
+        "wires": [
+            [
+                "3579f20b135b643b"
+            ]
+        ]
+    },
+    {
+        "id": "3579f20b135b643b",
+        "type": "function",
+        "z": "fb8178f3789d4b3d",
+        "name": "Calculate Elapsed",
+        "func": "const sessionActive = flow.get('sessionActive') || false;\n\nif (!sessionActive) {\n    msg.payload = 'No active session';\n    return msg;\n}\n\nconst lastChange = flow.get('lastChangeTime') || Date.now();\nconst deskState = flow.get('deskState') || 'unknown';\n\nconst elapsedMs = Date.now() - lastChange;\nconst totalSeconds = Math.floor(elapsedMs / 1000);\nconst minutes = Math.floor(totalSeconds / 60);\nconst seconds = totalSeconds % 60;\n\nmsg.payload = `${deskState} for ${minutes}m ${seconds}s`;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 677.5,
+        "y": 1052,
+        "wires": [
+            [
+                "f570683abea7916c"
+            ]
+        ]
+    },
+    {
+        "id": "f570683abea7916c",
+        "type": "ui-text",
+        "z": "fb8178f3789d4b3d",
+        "group": "bccd17396fda2f7e",
+        "order": 2,
+        "width": "3",
+        "height": "1",
+        "name": "Duration",
+        "label": "Duration",
+        "format": "{{msg.payload}}",
+        "layout": "col-center",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#717171",
+        "wrapText": false,
+        "className": "",
+        "value": "payload",
+        "valueType": "msg",
+        "x": 963.5,
+        "y": 1096,
+        "wires": []
+    },
+    {
+        "id": "ec767c5fe93dea55",
+        "type": "mqtt in",
+        "z": "fb8178f3789d4b3d",
+        "name": "",
+        "topic": "desk/1/session",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "1caff872901a55b2",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 421.5,
+        "y": 1134,
+        "wires": [
+            [
+                "cf724aa7198e9785"
+            ]
+        ]
+    },
+    {
+        "id": "cf724aa7198e9785",
+        "type": "function",
+        "z": "fb8178f3789d4b3d",
+        "name": "Session Logic ",
+        "func": "var sessionActive = flow.get('sessionActive') || false;\nvar statusMsg;\nvar insertMsg = null;\n\nif (!sessionActive) {\n    // СТАРТ на сесия\n    flow.set('sessionActive', true);\n    flow.set('sessionStartTime', Date.now());\n    flow.set('lastChangeTime', Date.now());\n    flow.set('sessionSatSeconds', 0);\n    flow.set('sessionStoodSeconds', 0);\n    flow.set('deskState', 'sat');\n\n    msg.payload = {\n        event_type: 'session_start',\n        timestamp: new Date().toISOString()\n    };\n\n    statusMsg = { payload: { event_type: 'sat' } };\n} else {\n    // КРАЙ на сесия\n    var lastChangeTime = flow.get('lastChangeTime') || Date.now();\n    var lastState = flow.get('deskState') || 'stood';\n    var finalDuration = Math.floor((Date.now() - lastChangeTime) / 1000);\n\n    if (lastState === 'sat') {\n        flow.set('sessionSatSeconds', (flow.get('sessionSatSeconds') || 0) + finalDuration);\n    } else {\n        flow.set('sessionStoodSeconds', (flow.get('sessionStoodSeconds') || 0) + finalDuration);\n    }\n\n    flow.set('sessionActive', false);\n    flow.set('deskState', 'stood');\n\n    var totalSat = flow.get('sessionSatSeconds') || 0;\n    var totalStood = flow.get('sessionStoodSeconds') || 0;\n    var sessionStart = flow.get('sessionStartTime') || Date.now();\n    var sessionEndTime = Date.now();\n    var totalSeconds = Math.floor((sessionEndTime - sessionStart) / 1000);\n\n    var dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];\n    var dayOfWeek = dayNames[new Date(sessionStart).getDay()];\n\n    msg.payload = {\n        event_type: 'session_end',\n        total_sat_seconds: totalSat,\n        total_stood_seconds: totalStood,\n        total_session_seconds: totalSeconds,\n        timestamp: new Date().toISOString()\n    };\n\n    statusMsg = { payload: { event_type: 'stood' } };\n\n    insertMsg = {\n        payload: {\n            session_start: new Date(sessionStart).toISOString(),\n            session_end: new Date(sessionEndTime).toISOString(),\n            total_sat_seconds: totalSat,\n            total_stood_seconds: totalStood,\n            total_session_seconds: totalSeconds,\n            day_of_week: dayOfWeek\n        }\n    };\n}\n\nreturn [msg, statusMsg, insertMsg];",
+        "outputs": 3,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 660.5,
+        "y": 1270,
+        "wires": [
+            [
+                "2b79ed4bb0a57de6",
+                "487ccae60bb6a13c",
+                "91fa79972163bd14"
+            ],
+            [
+                "fef385d30812c8d3"
+            ],
+            [
+                "724e90d9d1fb776a"
+            ]
+        ]
+    },
+    {
+        "id": "2b79ed4bb0a57de6",
+        "type": "debug",
+        "z": "fb8178f3789d4b3d",
+        "name": "debug 9",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 879.5,
+        "y": 1236,
+        "wires": []
+    },
+    {
+        "id": "475882a305a811cf",
+        "type": "ui-text",
+        "z": "fb8178f3789d4b3d",
+        "group": "bccd17396fda2f7e",
+        "order": 3,
+        "width": "3",
+        "height": "4",
+        "name": "Last Session Info",
+        "label": "Session summary",
+        "format": "{{msg.payload}}",
+        "layout": "col-center",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#717171",
+        "wrapText": false,
+        "className": "",
+        "value": "payload",
+        "valueType": "msg",
+        "x": 1319.5,
+        "y": 1339,
+        "wires": []
+    },
+    {
+        "id": "487ccae60bb6a13c",
+        "type": "function",
+        "z": "fb8178f3789d4b3d",
+        "name": "Format Session Summary",
+        "func": "if (msg.payload.event_type === 'session_end') {\n    var satMin = Math.floor(msg.payload.total_sat_seconds / 60);\n    var satSec = msg.payload.total_sat_seconds % 60;\n    var stoodMin = Math.floor(msg.payload.total_stood_seconds / 60);\n    var stoodSec = msg.payload.total_stood_seconds % 60;\n\n    msg.payload = `Sat: ${satMin}m ${satSec}s | Stood: ${stoodMin}m ${stoodSec}s`;\n} else {\n    msg.payload = 'Session in progress...';\n}\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 925.5,
+        "y": 1354,
+        "wires": [
+            [
+                "475882a305a811cf"
+            ]
+        ]
+    },
+    {
+        "id": "fef385d30812c8d3",
+        "type": "function",
+        "z": "fb8178f3789d4b3d",
+        "name": "Format Current Session ",
+        "func": "const sessionActive = flow.get('sessionActive') || false;\n\nif (!sessionActive) {\n    msg.payload = 'Out of office';\n    return msg;\n}\n\nmsg.payload = msg.payload.event_type;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1030.5,
+        "y": 652,
+        "wires": [
+            [
+                "3726b9ea1b853925"
+            ]
+        ]
+    },
+    {
+        "id": "724e90d9d1fb776a",
+        "type": "function",
+        "z": "fb8178f3789d4b3d",
+        "name": "Build Work Session Insert ",
+        "func": "msg.query = \"INSERT INTO work_sessions (session_start, session_end, total_sat_seconds, total_stood_seconds, total_session_seconds, day_of_week) VALUES ($1, $2, $3, $4, $5, $6)\";\nmsg.params = [\n    msg.payload.session_start,\n    msg.payload.session_end,\n    msg.payload.total_sat_seconds,\n    msg.payload.total_stood_seconds,\n    msg.payload.total_session_seconds,\n    msg.payload.day_of_week\n];\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 920.5,
+        "y": 1461,
+        "wires": [
+            [
+                "39f17082b8dff0fb"
+            ]
+        ]
+    },
+    {
+        "id": "39f17082b8dff0fb",
+        "type": "postgresql",
+        "z": "fb8178f3789d4b3d",
+        "name": "LOG_SESSION",
+        "query": "",
+        "postgreSQLConfig": "ecb35dc2f81ac1d2",
+        "split": false,
+        "rowsPerMsg": 1,
+        "outputs": 1,
+        "x": 1278.5,
+        "y": 1457,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "5fb69b3c15bb330c",
+        "type": "ui-chart",
+        "z": "fb8178f3789d4b3d",
+        "group": "e07a6e2d73c64ec1",
+        "name": "Sat/Stood ratio",
+        "label": "chart",
+        "order": 1,
+        "chartType": "bar",
+        "category": "category",
+        "categoryType": "property",
+        "xAxisLabel": "Sat/Stood",
+        "xAxisProperty": "series",
+        "xAxisPropertyType": "property",
+        "xAxisType": "category",
+        "xAxisFormat": "",
+        "xAxisFormatType": "auto",
+        "xmin": "",
+        "xmax": "",
+        "yAxisLabel": "Seconds",
+        "yAxisProperty": "value",
+        "yAxisPropertyType": "property",
+        "ymin": "0",
+        "ymax": "",
+        "bins": 10,
+        "action": "replace",
+        "stackSeries": false,
+        "pointShape": "circle",
+        "pointRadius": 4,
+        "showLegend": true,
+        "removeOlder": 1,
+        "removeOlderUnit": "3600",
+        "removeOlderPoints": "",
+        "colors": [
+            "#0095ff",
+            "#ff0000",
+            "#ff7f0e",
+            "#2ca02c",
+            "#a347e1",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "textColor": [
+            "#666666"
+        ],
+        "textColorDefault": true,
+        "gridColor": [
+            "#e5e5e5"
+        ],
+        "gridColorDefault": true,
+        "width": "3",
+        "height": "6",
+        "className": "",
+        "interpolation": "linear",
+        "x": 1146.5,
+        "y": 1563,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "91fa79972163bd14",
+        "type": "function",
+        "z": "fb8178f3789d4b3d",
+        "name": "Format Chart Data ",
+        "func": "msg.payload = [\n    { category: \"Last Session\", series: \"Sat\", value: msg.payload.total_sat_seconds },\n    { category: \"Last Session\", series: \"Stood\", value: msg.payload.total_stood_seconds }\n];\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 914.5,
+        "y": 1560,
+        "wires": [
+            [
+                "5fb69b3c15bb330c"
+            ]
+        ]
+    },
+    {
+        "id": "1caff872901a55b2",
+        "type": "mqtt-broker",
+        "name": "Docker_mqtt",
+        "broker": "localhost",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "ecb35dc2f81ac1d2",
+        "type": "postgreSQLConfig",
+        "name": "",
+        "host": "localhost",
+        "hostFieldType": "str",
+        "port": 5432,
+        "portFieldType": "num",
+        "database": "iot_demo",
+        "databaseFieldType": "str",
+        "ssl": "false",
+        "sslFieldType": "bool",
+        "applicationName": "",
+        "applicationNameType": "str",
+        "max": 10,
+        "maxFieldType": "num",
+        "idle": 1000,
+        "idleFieldType": "num",
+        "connectionTimeout": 10000,
+        "connectionTimeoutFieldType": "num",
+        "userFieldType": "cred",
+        "userEnv": "",
+        "passwordFieldType": "cred",
+        "passwordEnv": ""
+    },
+    {
+        "id": "bccd17396fda2f7e",
+        "type": "ui-group",
+        "name": "Desk 1 Status",
+        "page": "80de4e12b48b2776",
+        "width": "3",
+        "height": "6",
+        "order": 1,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "f5de675168dfc86c",
+        "type": "ui-group",
+        "name": "Export last states",
+        "page": "80de4e12b48b2776",
+        "width": 6,
+        "height": "2",
+        "order": 3,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "e07a6e2d73c64ec1",
+        "type": "ui-group",
+        "name": "Session Chart",
+        "page": "80de4e12b48b2776",
+        "width": "3",
+        "height": "6",
+        "order": 2,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "80de4e12b48b2776",
+        "type": "ui-page",
+        "name": "Desk Presence",
+        "ui": "23bd8b7d6b57c4ce",
+        "path": "/Desk-Presence",
+        "icon": "home",
+        "layout": "grid",
+        "theme": "0b05b39283a3b403",
+        "breakpoints": [
+            {
+                "name": "Default",
+                "px": "0",
+                "cols": "3"
+            },
+            {
+                "name": "Tablet",
+                "px": "576",
+                "cols": "6"
+            },
+            {
+                "name": "Small Desktop",
+                "px": "768",
+                "cols": "9"
+            },
+            {
+                "name": "Desktop",
+                "px": "1024",
+                "cols": "12"
+            }
+        ],
+        "order": 1,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "23bd8b7d6b57c4ce",
+        "type": "ui-base",
+        "name": "My Dashboard",
+        "path": "/dashboard",
+        "appIcon": "",
+        "includeClientData": true,
+        "acceptsClientConfig": [
+            "ui-notification",
+            "ui-control"
+        ],
+        "showPathInSidebar": false,
+        "headerContent": "page",
+        "navigationStyle": "default",
+        "titleBarStyle": "default",
+        "showReconnectNotification": true,
+        "notificationDisplayTime": 1,
+        "showDisconnectNotification": true,
+        "allowInstall": false
+    },
+    {
+        "id": "0b05b39283a3b403",
+        "type": "ui-theme",
+        "name": "Default Theme",
+        "colors": {
+            "surface": "#18191b",
+            "primary": "#0d74ce",
+            "bgPage": "#111113",
+            "groupBg": "#212225",
+            "groupOutline": "#363a3f"
+        },
+        "sizes": {
+            "density": "default",
+            "pagePadding": "12px",
+            "groupGap": "12px",
+            "groupBorderRadius": "4px",
+            "widgetGap": "12px"
+        }
+    },
+    {
+        "id": "5c0528f5f2af942a",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-contrib-postgresql": "0.16.2",
+            "@flowfuse/node-red-dashboard": "1.31.0"
+        }
+    }
+]

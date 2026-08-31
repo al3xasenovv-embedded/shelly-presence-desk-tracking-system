@@ -1,0 +1,8 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto
+    container_name: mosquitto
+    ports:
+      - "1883:1883"
+      - "9883:9883"
+    restart: unless-stopped

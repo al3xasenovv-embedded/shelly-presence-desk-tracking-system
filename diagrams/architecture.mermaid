@@ -1,0 +1,14 @@
+flowchart TD
+    A["Shelly BLU Button<br/>(single_push)"] --> B["BLU Gateway Gen3<br/>(bthomeevent)"]
+    B --> C["Local MQTT Broker<br/>(Mosquitto)"]
+    C --> D["Node-RED<br/>(processing / toggle logic)"]
+    D --> E[("PostgreSQL<br/>desk_sessions table")]
+    D --> F["Node-RED Dashboard<br/>(live status view)"]
+
+    E --> G["FastAPI<br/>(REST API layer)"]
+
+    G --> H["GET /status/{user}<br/>current status"]
+    G --> I["GET /history<br/>historical data"]
+    G --> J["GET /export/csv<br/>daily export"]
+
+    G -.->|API key auth| K["3rd Party System<br/>(client app / partner integration)"]
