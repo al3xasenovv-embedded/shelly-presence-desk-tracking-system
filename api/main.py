@@ -1,10 +1,18 @@
 from fastapi import FastAPI
 from datetime import datetime
+from fastapi.middleware.cors import CORSMiddleware
 
 import psycopg2
 import psycopg2.extras
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 DB_CONFIG = {
     "host": "localhost",
