@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import './App.css';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const STATUS_LABELS = { sat: 'Seated', stood: 'Standing', out: 'Out of office' };
 const NAV_ITEMS = ['Overview', 'Desks', 'Sessions', 'Reports', 'Settings'];
@@ -112,9 +113,16 @@ function App() {
         </div>
 
         <div className="stats-row">
-          <StatCard label="Seated" value={seated} accent="#E8A33D" />
-          <StatCard label="Standing" value={standing} accent="#4FB286" />
-          <StatCard label="Desks tracked" value={1} accent="#7C86A6" />
+          <StatCard
+            label="Current Status"
+            value={STATUS_LABELS[status?.status] || 'Loading...'}
+            accent={status?.status === 'sat' ? '#E8A33D' : status?.status === 'stood' ? '#4FB286' : '#3E4048'}
+          />
+          <StatCard
+            label="Duration"
+            value={status?.elapsed_seconds != null ? formatElapsed(status.elapsed_seconds) : 'No active session'}
+            accent="#7C86A6"
+          />
         </div>
 
         {status && (
@@ -128,48 +136,81 @@ function App() {
               <div className="desk-row__status">
                 <StatusDot status={status.status} />
                 <span>{STATUS_LABELS[status.status]}</span>
-                <span className="desk-row__time">{formatElapsed(status.elapsed_seconds)}</span>
+                <span className="desk-row__time">
+                  {status.elapsed_seconds !== null ? formatElapsed(status.elapsed_seconds) : 'No active session'}
+                </span>
               </div>
             </div>
           </div>
         )}
 
-        {lastSession && (
-          <>
-            <h2 className="section-title">Last Session</h2>
-            <div className="summary-row">
-              <StatCard label="Seated time" value={formatDuration(lastSession.total_sat_seconds)} accent="#E8A33D" />
-              <StatCard label="Standing time" value={formatDuration(lastSession.total_stood_seconds)} accent="#4FB286" />
-              <StatCard label="Total session" value={formatDuration(lastSession.total_session_seconds)} accent="#7C86A6" />
-            </div>
-          </>
-        )}
+        <div className="overview-grid">
+          <div>
+            {lastSession && (
+              <>
+                <h2 className="section-title">Last Session</h2>
+                <div className="chart-card">
+                  <ResponsiveContainer width="100%" height={260}>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Seated', value: lastSession.total_sat_seconds },
+                          { name: 'Standing', value: lastSession.total_stood_seconds },
+                        ]}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={90}
+                        paddingAngle={3}
+                      >
+                        <Cell fill="#E8A33D" />
+                        <Cell fill="#4FB286" />
+                      </Pie>
+                      <Tooltip
+                        formatter={(value) => formatDuration(value)}
+                        contentStyle={{ background: '#1A1B21', border: '1px solid #24262E', borderRadius: 8 }}
+                      />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="chart-card__total">
+                    Total session: {formatDuration(lastSession.total_session_seconds)}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
 
-        <h2 className="section-title">Recent Sessions</h2>
-        <table className="sessions-table">
-          <thead>
-            <tr>
-              <th>Day</th>
-              <th>Start</th>
-              <th>End</th>
-              <th>Seated</th>
-              <th>Standing</th>
-              <th>Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {workSessions.map((s) => (
-              <tr key={s.id}>
-                <td>{s.day_of_week}</td>
-                <td>{formatTime(s.session_start)}</td>
-                <td>{formatTime(s.session_end)}</td>
-                <td>{formatDuration(s.total_sat_seconds)}</td>
-                <td>{formatDuration(s.total_stood_seconds)}</td>
-                <td>{formatDuration(s.total_session_seconds)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          <div>
+            <h2 className="section-title">Recent Sessions</h2>
+            <table className="sessions-table">
+              <thead>
+                <tr>
+                  <th>Day</th>
+                  <th>Start</th>
+                  <th>End</th>
+                  <th>Seated</th>
+                  <th>Standing</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {workSessions.map((s) => (
+                  <tr key={s.id}>
+                    <td>{s.day_of_week}</td>
+                    <td>{formatTime(s.session_start)}</td>
+                    <td>{formatTime(s.session_end)}</td>
+                    <td>{formatDuration(s.total_sat_seconds)}</td>
+                    <td>{formatDuration(s.total_stood_seconds)}</td>
+                    <td>{formatDuration(s.total_session_seconds)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </main>
     </div>
   );

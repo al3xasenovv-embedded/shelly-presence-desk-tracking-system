@@ -32,6 +32,11 @@ def run_query(query):
     conn.close()
     return rows
 
+def get_active_session():
+    rows = run_query("SELECT * FROM work_sessions WHERE session_end IS NULL ORDER BY id DESC LIMIT 1")
+    if rows:
+        return rows[0]
+    return None
 
 @app.get("/")
 def read_root():
@@ -47,15 +52,25 @@ def get_work_sessions():
 
 @app.get("/status")
 def get_status():
+    active_session = get_active_session()
+
+    if not active_session:
+        return {"status": "out", "elapsed_seconds": None}
+
     rows = run_query("SELECT * FROM desk_sessions ORDER BY id DESC LIMIT 1")
-    last_event = rows[0]
-    last_state = last_event["event_type"]
-    last_timestamp  = last_event["timestamp"]
 
-    elapsed_time = datetime.now() - last_timestamp
-    elapsed_seconds = int(elapsed_time.total_seconds())
+    session_start = active_session["session_start"]
 
+    if not rows or rows[0]["timestamp"] < session_start:
+        # никакво sat/stood превключване откакто сесията е стартирала
+        current_state = "sat"
+        reference_time = session_start
+    else:
+        last_event = rows[0]
+        last_state = last_event["event_type"]
+        current_state = "stood" if last_state == "sat" else "sat"
+        reference_time = last_event["timestamp"]
 
-    current_state = "stood" if last_state == "sat" else "sat"
+    elapsed_seconds = int((datetime.now() - reference_time).total_seconds())
 
-    return {"status": current_state , "elapsed_seconds": elapsed_seconds}
+    return {"status": current_state, "elapsed_seconds": elapsed_seconds}

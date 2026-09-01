@@ -269,3 +269,34 @@ body {
 .sessions-table tr:last-child td {
   border-bottom: none;
 }
+
+.chart-card {
+  background: #1A1B21;
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 12px;
+}
+
+.chart-card__total {
+  text-align: center;
+  color: #9A9CA6;
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+.overview-grid {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  background: #24262E;
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 36px;
+}
