@@ -24,6 +24,17 @@ function formatElapsed(seconds) {
   return `${minutes}m ${secs}s ago`;
 }
 
+function formatDuration(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${minutes}m ${secs}s`;
+}
+
+function formatTime(isoString) {
+  const d = new Date(isoString);
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
 function Sidebar() {
   const [active, setActive] = useState('Overview');
   return (
@@ -50,6 +61,7 @@ function Sidebar() {
 function App() {
   const [status, setStatus] = useState(null);
   const [connected, setConnected] = useState(false);
+  const [workSessions, setWorkSessions] = useState([]);
 
   useEffect(() => {
     const fetchStatus = () => {
@@ -61,14 +73,25 @@ function App() {
         })
         .catch(() => setConnected(false));
     };
-
     fetchStatus();
     const interval = setInterval(fetchStatus, 3000);
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    const fetchWorkSessions = () => {
+      fetch('http://127.0.0.1:8000/work-sessions')
+        .then((res) => res.json())
+        .then((data) => setWorkSessions(data));
+    };
+    fetchWorkSessions();
+    const interval = setInterval(fetchWorkSessions, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
   const seated = status?.status === 'sat' ? 1 : 0;
   const standing = status?.status === 'stood' ? 1 : 0;
+  const lastSession = workSessions[0];
 
   return (
     <div className="layout">
@@ -110,6 +133,43 @@ function App() {
             </div>
           </div>
         )}
+
+        {lastSession && (
+          <>
+            <h2 className="section-title">Last Session</h2>
+            <div className="summary-row">
+              <StatCard label="Seated time" value={formatDuration(lastSession.total_sat_seconds)} accent="#E8A33D" />
+              <StatCard label="Standing time" value={formatDuration(lastSession.total_stood_seconds)} accent="#4FB286" />
+              <StatCard label="Total session" value={formatDuration(lastSession.total_session_seconds)} accent="#7C86A6" />
+            </div>
+          </>
+        )}
+
+        <h2 className="section-title">Recent Sessions</h2>
+        <table className="sessions-table">
+          <thead>
+            <tr>
+              <th>Day</th>
+              <th>Start</th>
+              <th>End</th>
+              <th>Seated</th>
+              <th>Standing</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {workSessions.map((s) => (
+              <tr key={s.id}>
+                <td>{s.day_of_week}</td>
+                <td>{formatTime(s.session_start)}</td>
+                <td>{formatTime(s.session_end)}</td>
+                <td>{formatDuration(s.total_sat_seconds)}</td>
+                <td>{formatDuration(s.total_stood_seconds)}</td>
+                <td>{formatDuration(s.total_session_seconds)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </main>
     </div>
   );
