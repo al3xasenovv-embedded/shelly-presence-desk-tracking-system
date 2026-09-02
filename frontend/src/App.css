@@ -140,16 +140,6 @@ body {
   background: currentColor;
 }
 
-.stats-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1px;
-  background: #24262E;
-  border-radius: 14px;
-  overflow: hidden;
-  margin-bottom: 36px;
-}
-
 .stat-card {
   background: #1A1B21;
   padding: 28px 26px;
@@ -176,6 +166,7 @@ body {
   background: #24262E;
   border-radius: 14px;
   overflow: hidden;
+  margin-bottom: 20px;
 }
 
 .desk-row {
@@ -224,8 +215,29 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
+}
 
-  .section-title {
+.desk-row__time {
+  color: #9A9CA6;
+  font-size: 13px;
+  margin-left: 8px;
+}
+
+/* Status dot */
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #3E4048;
+}
+
+.status-dot--sat { background: #E8A33D; }
+.status-dot--stood { background: #4FB286; }
+.status-dot--out { background: #3E4048; }
+
+.section-title {
   font-size: 18px;
   font-weight: 600;
   margin: 40px 0 16px;
@@ -299,4 +311,148 @@ body {
   border-radius: 14px;
   overflow: hidden;
   margin-bottom: 36px;
+}
+.section-title--first {
+  margin-top: 0;
+}
+
+/* Overview — описание на системата */
+
+.doc {
+  max-width: 720px;
+}
+
+.doc__lead {
+  margin: 0;
+  color: #C7C9D1;
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.doc__note {
+  color: #9A9CA6;
+  font-size: 14px;
+  line-height: 1.7;
+  margin: 0;
+}
+
+.doc__footnote {
+  margin: 40px 0 0;
+  padding-top: 20px;
+  border-top: 1px solid #24262E;
+  color: #7C7E88;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.pipeline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.pipeline__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pipeline__step {
+  background: #1A1B21;
+  border: 1px solid #24262E;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.pipeline__arrow {
+  color: #E8A33D;
+  font-size: 13px;
+}
+
+.doc__list {
+  margin: 0;
+}
+
+.doc__item {
+  display: grid;
+  grid-template-columns: 190px 1fr;
+  gap: 20px;
+  padding: 14px 0;
+  border-bottom: 1px solid #1F2028;
+}
+
+.doc__item:last-child {
+  border-bottom: none;
+}
+
+.doc__item dt {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.doc__item dd {
+  margin: 0;
+  color: #9A9CA6;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Desks — под-навигация */
+
+.desk-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 28px;
+  border-bottom: 1px solid #24262E;
+}
+
+.desk-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  color: #9A9CA6;
+  font-family: inherit;
+  font-size: 14px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.desk-tab:hover:not(.desk-tab--disabled) {
+  color: #EDEDEF;
+}
+
+.desk-tab--active {
+  color: #EDEDEF;
+  border-bottom-color: #E8A33D;
+  font-weight: 500;
+}
+
+.desk-tab--disabled {
+  color: #4A4C55;
+  cursor: not-allowed;
+}
+
+/* Placeholder (Reports) */
+
+.placeholder {
+  background: #1A1B21;
+  border: 1px dashed #2C2E38;
+  border-radius: 14px;
+  padding: 56px 32px;
+  text-align: center;
+}
+
+.placeholder__title {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.placeholder__text {
+  margin: 8px 0 0;
+  color: #9A9CA6;
+  font-size: 14px;
 }
