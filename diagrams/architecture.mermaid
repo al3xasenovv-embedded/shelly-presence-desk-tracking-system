@@ -1,14 +1,21 @@
 flowchart TD
-    A["Shelly BLU Button<br/>(single_push)"] --> B["BLU Gateway Gen3<br/>(bthomeevent)"]
-    B --> C["Local MQTT Broker<br/>(Mosquitto)"]
-    C --> D["Node-RED<br/>(processing / toggle logic)"]
-    D --> E[("PostgreSQL<br/>desk_sessions table")]
-    D --> F["Node-RED Dashboard<br/>(live status view)"]
+    A["Shelly BLU Button Tough 1 ZB<br/>(single_push / double_push)"] --> B["BLU Gateway Gen3<br/>(bthomeevent)"]
+    B --> C["Local MQTT Broker<br/>(Mosquitto, Docker)"]
 
-    E --> G["FastAPI<br/>(REST API layer)"]
+    C -->|"desk/1/presence"| D["Node-RED — Toggle Logic<br/>(sat / stood toggle)"]
+    C -->|"desk/1/session"| E["Node-RED — Session Logic<br/>(work session start / end)"]
 
-    G --> H["GET /status/{user}<br/>current status"]
-    G --> I["GET /history<br/>historical data"]
-    G --> J["GET /export/csv<br/>daily export"]
+    D --> F[("PostgreSQL<br/>desk_sessions")]
+    E --> G[("PostgreSQL<br/>work_sessions")]
 
-    G -.->|API key auth| K["3rd Party System<br/>(client app / partner integration)"]
+    D --> H["Node-RED Dashboard 2.0<br/>(live status, chart, table)"]
+    E --> H
+
+    F --> I["FastAPI<br/>(read-only layer)"]
+    G --> I
+
+    I --> J["GET /status<br/>GET /sessions/recent<br/>GET /work-sessions"]
+    I --> K["GET /export/session/:id<br/>GET /export/user/:id/range<br/>GET /export/all"]
+
+    J --> L["React frontend (Vite)<br/>Overview · Desks · Reports"]
+    K --> L
