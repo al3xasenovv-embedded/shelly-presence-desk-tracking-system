@@ -509,3 +509,94 @@ body {
   /* фонът на JPG-то е почти черен — screen го гаси и остава само рисунката */
   mix-blend-mode: screen;
 }
+
+/* Reports — CSV export */
+
+.export-group {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 22px;
+  margin-bottom: 8px;
+}
+
+.export-group__desc {
+  margin: 0 0 18px;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.export-group__error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 14px;
+}
+
+.export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.select {
+  flex: 1;
+  min-width: 240px;
+  background: var(--bg-base);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.2);
+}
+
+.btn {
+  display: inline-block;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.btn--primary {
+  background: var(--accent-primary);
+  color: var(--bg-base);
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.35);
+}
+
+.btn--primary:hover {
+  background: var(--accent-glow);
+}
+
+.btn--ghost {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.btn--ghost:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-glow);
+}
+
+.btn--disabled {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text-disabled);
+  box-shadow: none;
+  cursor: not-allowed;
+}

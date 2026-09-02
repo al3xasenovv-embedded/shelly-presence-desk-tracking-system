@@ -12,6 +12,10 @@ const ACTIVE_DESKS = [1];
 // Hardcoded, докато няма employees таблица.
 const DESK_EMPLOYEES = { 1: 'Alex' };
 
+// Единственият реален потребител засега. Държи се като променлива, не зашито
+// в URL-а, за да стане user selector, когато има повече от един.
+const EXPORT_USER_ID = 1;
+
 const API_BASE = 'http://127.0.0.1:8000';
 
 // Огледало на токените в App.css (:root) — Recharts иска реални стойности, не var()
@@ -353,13 +357,102 @@ function DesksView() {
   );
 }
 
-/* ---------- Reports placeholder ---------- */
+/* ---------- Reports: CSV export ---------- */
+
+function sessionLabel(session) {
+  const end = session.session_end ? formatTime(session.session_end) : 'in progress';
+  return `${session.day_of_week}, ${formatTime(session.session_start)} - ${end}`;
+}
+
+function ExportLink({ href, children, disabled, variant = 'ghost' }) {
+  const className = `btn btn--${variant} ${disabled ? 'btn--disabled' : ''}`;
+  if (disabled) {
+    return <span className={className}>{children}</span>;
+  }
+  return (
+    <a className={className} href={href}>
+      {children}
+    </a>
+  );
+}
 
 function Reports() {
+  const [sessions, setSessions] = useState([]);
+  const [selectedId, setSelectedId] = useState('');
+  const [loadFailed, setLoadFailed] = useState(false);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/work-sessions`)
+      .then((res) => res.json())
+      .then((data) => {
+        setSessions(data);
+        if (data.length > 0) setSelectedId(String(data[0].id));
+      })
+      .catch(() => setLoadFailed(true));
+  }, []);
+
+  const employee = DESK_EMPLOYEES[EXPORT_USER_ID] || `User ${EXPORT_USER_ID}`;
+
   return (
-    <div className="placeholder">
-      <div className="placeholder__title">Coming soon</div>
-      <p className="placeholder__text">CSV export на работните сесии ще се появи тук.</p>
+    <div>
+      <h2 className="section-title section-title--first">Export a single session</h2>
+      <div className="export-group">
+        <p className="export-group__desc">
+          Изтегля пълния запис за една работна сесия — начало, край, разбивка
+          седнало/изправено и общо време.
+        </p>
+        {loadFailed ? (
+          <p className="export-group__error">
+            Списъкът със сесии не можа да се зареди. Провери дали API-то на {API_BASE} работи.
+          </p>
+        ) : (
+          <div className="export-actions">
+            <select
+              className="select"
+              value={selectedId}
+              onChange={(e) => setSelectedId(e.target.value)}
+              disabled={sessions.length === 0}
+            >
+              {sessions.length === 0 && <option value="">Няма записани сесии</option>}
+              {sessions.map((session) => (
+                <option key={session.id} value={session.id}>
+                  {sessionLabel(session)}
+                </option>
+              ))}
+            </select>
+            <ExportLink
+              variant="primary"
+              disabled={!selectedId}
+              href={`${API_BASE}/export/session/${selectedId}`}
+            >
+              Export CSV
+            </ExportLink>
+          </div>
+        )}
+      </div>
+
+      <h2 className="section-title">Per-employee statistics</h2>
+      <div className="export-group">
+        <p className="export-group__desc">
+          Всички работни сесии на един служител за последните 5 дни.
+        </p>
+        <div className="export-actions">
+          <ExportLink href={`${API_BASE}/export/user/${EXPORT_USER_ID}/range?days=5`}>
+            Export {employee}&apos;s last 5 days
+          </ExportLink>
+        </div>
+      </div>
+
+      <h2 className="section-title">All employees</h2>
+      <div className="export-group">
+        <p className="export-group__desc">
+          Всички сесии на всички служители за избрания период, най-новите отгоре.
+        </p>
+        <div className="export-actions">
+          <ExportLink href={`${API_BASE}/export/all?days=1`}>Export today (all users)</ExportLink>
+          <ExportLink href={`${API_BASE}/export/all?days=5`}>Export last 5 days (all users)</ExportLink>
+        </div>
+      </div>
     </div>
   );
 }
