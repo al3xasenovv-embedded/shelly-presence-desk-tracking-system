@@ -50,6 +50,9 @@ def get_recent_sessions():
 def get_work_sessions():
     return run_query("SELECT * FROM work_sessions ORDER BY id DESC LIMIT 10")
 
+# КОНВЕНЦИЯ ЗА ВРЕМЕ: всички timestamp колони са `timestamp without time zone`
+# и съдържат ЛОКАЛНО време (Europe/Sofia), записано от Node-RED чрез localISO().
+# Затова datetime.now() (също локално) е правилната база за сравнение — НЕ utcnow().
 @app.get("/status")
 def get_status():
     active_session = get_active_session()

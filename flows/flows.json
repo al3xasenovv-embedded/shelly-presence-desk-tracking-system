@@ -97,7 +97,7 @@
         "type": "function",
         "z": "fb8178f3789d4b3d",
         "name": "Toggle Logic",
-        "func": "// прочети текущото състояние от flow context\nvar currentState = flow.get('deskState') || 'stood';\nvar lastChangeTime = flow.get('lastChangeTime') || Date.now();\n\n// изчисли продължителността на предишното състояние (в секунди)\nvar durationSeconds = Math.floor((Date.now() - lastChangeTime) / 1000);\n\n// toggle към ново състояние\nvar newState = (currentState === 'stood') ? 'sat' : 'stood';\n\n// запази новото състояние + нов старт час\nflow.set('deskState', newState);\nflow.set('lastChangeTime', Date.now());\n\n// трупай времето в running totals, САМО ако работна сесия тече в момента\nvar sessionActive = flow.get('sessionActive') || false;\nif (sessionActive) {\n    if (currentState === 'sat') {\n        flow.set('sessionSatSeconds', (flow.get('sessionSatSeconds') || 0) + durationSeconds);\n    } else {\n        flow.set('sessionStoodSeconds', (flow.get('sessionStoodSeconds') || 0) + durationSeconds);\n    }\n}\n\n// съобщение 1 — за live dashboard (текущ статус, показва НОВОТО състояние)\nvar liveMsg = {\n    payload: {\n        event_type: newState,\n        timestamp: new Date().toISOString()\n    }\n};\n\n// съобщение 2 — за INSERT (завършената сесия, ПРЕДИШНОТО състояние + продължителност)\nvar insertMsg = {\n    payload: {\n        event_type: currentState,\n        duration_seconds: durationSeconds,\n        timestamp: new Date(lastChangeTime).toISOString()\n    }\n};\n\nreturn [liveMsg, insertMsg];",
+        "func": "// локално време (Europe/Sofia) като ISO низ БЕЗ Z — Postgres го записва буквално\nfunction localISO(ms) {\n    var d = new Date(ms);\n    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, -1);\n}\n\n// прочети текущото състояние от flow context\nvar currentState = flow.get('deskState') || 'stood';\nvar lastChangeTime = flow.get('lastChangeTime') || Date.now();\n\n// изчисли продължителността на предишното състояние (в секунди)\nvar durationSeconds = Math.floor((Date.now() - lastChangeTime) / 1000);\n\n// toggle към ново състояние\nvar newState = (currentState === 'stood') ? 'sat' : 'stood';\n\n// запази новото състояние + нов старт час\nflow.set('deskState', newState);\nflow.set('lastChangeTime', Date.now());\n\n// трупай времето в running totals, САМО ако работна сесия тече в момента\nvar sessionActive = flow.get('sessionActive') || false;\nif (sessionActive) {\n    if (currentState === 'sat') {\n        flow.set('sessionSatSeconds', (flow.get('sessionSatSeconds') || 0) + durationSeconds);\n    } else {\n        flow.set('sessionStoodSeconds', (flow.get('sessionStoodSeconds') || 0) + durationSeconds);\n    }\n}\n\n// съобщение 1 — за live dashboard (текущ статус, показва НОВОТО състояние)\nvar liveMsg = {\n    payload: {\n        event_type: newState,\n        timestamp: localISO(Date.now())\n    }\n};\n\n// съобщение 2 — за INSERT (завършената сесия, ПРЕДИШНОТО състояние + продължителност)\nvar insertMsg = {\n    payload: {\n        event_type: currentState,\n        duration_seconds: durationSeconds,\n        timestamp: localISO(lastChangeTime)\n    }\n};\n\nreturn [liveMsg, insertMsg];",
         "outputs": 2,
         "timeout": 0,
         "noerr": 0,
@@ -375,7 +375,7 @@
         "type": "function",
         "z": "fb8178f3789d4b3d",
         "name": "Session Logic ",
-        "func": "var sessionActive = flow.get('sessionActive') || false;\nvar statusMsg;\nvar insertMsg = null;\n\nif (!sessionActive) {\n    // СТАРТ на сесия\n    flow.set('sessionActive', true);\n    flow.set('sessionStartTime', Date.now());\n    flow.set('lastChangeTime', Date.now());\n    flow.set('sessionSatSeconds', 0);\n    flow.set('sessionStoodSeconds', 0);\n    flow.set('deskState', 'sat');\n\n    msg.payload = {\n        event_type: 'session_start',\n        timestamp: new Date().toISOString()\n    };\n\n    statusMsg = { payload: { event_type: 'sat' } };\n} else {\n    // КРАЙ на сесия\n    var lastChangeTime = flow.get('lastChangeTime') || Date.now();\n    var lastState = flow.get('deskState') || 'stood';\n    var finalDuration = Math.floor((Date.now() - lastChangeTime) / 1000);\n\n    if (lastState === 'sat') {\n        flow.set('sessionSatSeconds', (flow.get('sessionSatSeconds') || 0) + finalDuration);\n    } else {\n        flow.set('sessionStoodSeconds', (flow.get('sessionStoodSeconds') || 0) + finalDuration);\n    }\n\n    flow.set('sessionActive', false);\n    flow.set('deskState', 'stood');\n\n    var totalSat = flow.get('sessionSatSeconds') || 0;\n    var totalStood = flow.get('sessionStoodSeconds') || 0;\n    var sessionStart = flow.get('sessionStartTime') || Date.now();\n    var sessionEndTime = Date.now();\n    var totalSeconds = Math.floor((sessionEndTime - sessionStart) / 1000);\n\n    var dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];\n    var dayOfWeek = dayNames[new Date(sessionStart).getDay()];\n\n    msg.payload = {\n        event_type: 'session_end',\n        total_sat_seconds: totalSat,\n        total_stood_seconds: totalStood,\n        total_session_seconds: totalSeconds,\n        timestamp: new Date().toISOString()\n    };\n\n    statusMsg = { payload: { event_type: 'stood' } };\n\n    insertMsg = {\n        payload: {\n            session_start: new Date(sessionStart).toISOString(),\n            session_end: new Date(sessionEndTime).toISOString(),\n            total_sat_seconds: totalSat,\n            total_stood_seconds: totalStood,\n            total_session_seconds: totalSeconds,\n            day_of_week: dayOfWeek\n        }\n    };\n}\n\nreturn [msg, statusMsg, insertMsg];",
+        "func": "// локално време (Europe/Sofia) като ISO низ БЕЗ Z — Postgres го записва буквално\nfunction localISO(ms) {\n    var d = new Date(ms);\n    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, -1);\n}\n\nvar sessionActive = flow.get('sessionActive') || false;\nvar statusMsg;\nvar insertMsg;\n\nif (!sessionActive) {\n    // СТАРТ на сесия\n    var startTime = Date.now();\n    flow.set('sessionActive', true);\n    flow.set('sessionStartTime', startTime);\n    flow.set('lastChangeTime', startTime);\n    flow.set('sessionSatSeconds', 0);\n    flow.set('sessionStoodSeconds', 0);\n    flow.set('deskState', 'sat');\n\n    msg.payload = {\n        event_type: 'session_start',\n        timestamp: localISO(startTime)\n    };\n\n    statusMsg = { payload: { event_type: 'sat' } };\n\n    var dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];\n    var dayOfWeek = dayNames[new Date(startTime).getDay()];\n\n    // INSERT нов \"отворен\" ред, session_end = NULL\n    insertMsg = {\n        payload: {\n            mode: 'start',\n            session_start: localISO(startTime),\n            day_of_week: dayOfWeek\n        }\n    };\n} else {\n    // КРАЙ на сесия\n    var lastChangeTime = flow.get('lastChangeTime') || Date.now();\n    var lastState = flow.get('deskState') || 'stood';\n    var finalDuration = Math.floor((Date.now() - lastChangeTime) / 1000);\n\n    if (lastState === 'sat') {\n        flow.set('sessionSatSeconds', (flow.get('sessionSatSeconds') || 0) + finalDuration);\n    } else {\n        flow.set('sessionStoodSeconds', (flow.get('sessionStoodSeconds') || 0) + finalDuration);\n    }\n\n    flow.set('sessionActive', false);\n    flow.set('deskState', 'stood');\n\n    var totalSat = flow.get('sessionSatSeconds') || 0;\n    var totalStood = flow.get('sessionStoodSeconds') || 0;\n    var sessionStart = flow.get('sessionStartTime') || Date.now();\n    var sessionEndTime = Date.now();\n    var totalSeconds = Math.floor((sessionEndTime - sessionStart) / 1000);\n\n    msg.payload = {\n        event_type: 'session_end',\n        total_sat_seconds: totalSat,\n        total_stood_seconds: totalStood,\n        total_session_seconds: totalSeconds,\n        timestamp: localISO(Date.now())\n    };\n\n    statusMsg = { payload: { event_type: 'stood' } };\n\n    // UPDATE отворения ред, попълва session_end + totals\n    insertMsg = {\n        payload: {\n            mode: 'end',\n            session_start: localISO(sessionStart),\n            session_end: localISO(sessionEndTime),\n            total_sat_seconds: totalSat,\n            total_stood_seconds: totalStood,\n            total_session_seconds: totalSeconds\n        }\n    };\n}\n\nreturn [msg, statusMsg, insertMsg];",
         "outputs": 3,
         "timeout": 0,
         "noerr": 0,
@@ -483,7 +483,7 @@
         "type": "function",
         "z": "fb8178f3789d4b3d",
         "name": "Build Work Session Insert ",
-        "func": "msg.query = \"INSERT INTO work_sessions (session_start, session_end, total_sat_seconds, total_stood_seconds, total_session_seconds, day_of_week) VALUES ($1, $2, $3, $4, $5, $6)\";\nmsg.params = [\n    msg.payload.session_start,\n    msg.payload.session_end,\n    msg.payload.total_sat_seconds,\n    msg.payload.total_stood_seconds,\n    msg.payload.total_session_seconds,\n    msg.payload.day_of_week\n];\nreturn msg;",
+        "func": "if (msg.payload.mode === 'start') {\n    msg.query = \"INSERT INTO work_sessions (session_start, session_end, day_of_week) VALUES ($1, NULL, $2) RETURNING id\";\n    msg.params = [msg.payload.session_start, msg.payload.day_of_week];\n} else {\n    var workSessionId = flow.get('currentWorkSessionId');\n    msg.query = \"UPDATE work_sessions SET session_end = $1, total_sat_seconds = $2, total_stood_seconds = $3, total_session_seconds = $4 WHERE id = $5\";\n    msg.params = [\n        msg.payload.session_end,\n        msg.payload.total_sat_seconds,\n        msg.payload.total_stood_seconds,\n        msg.payload.total_session_seconds,\n        workSessionId\n    ];\n}\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -511,7 +511,9 @@
         "x": 1278.5,
         "y": 1457,
         "wires": [
-            []
+            [
+                "cfc2e4746c624fd0"
+            ]
         ]
     },
     {
@@ -594,6 +596,24 @@
             [
                 "5fb69b3c15bb330c"
             ]
+        ]
+    },
+    {
+        "id": "cfc2e4746c624fd0",
+        "type": "function",
+        "z": "fb8178f3789d4b3d",
+        "name": "Store Work Session ID",
+        "func": "if (Array.isArray(msg.payload) && msg.payload.length > 0 && msg.payload[0].id) {\n    flow.set('currentWorkSessionId', msg.payload[0].id);\n}\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1518.5,
+        "y": 1459,
+        "wires": [
+            []
         ]
     },
     {
@@ -770,7 +790,7 @@
         }
     },
     {
-        "id": "5c0528f5f2af942a",
+        "id": "0ab9f970a7eb968c",
         "type": "global-config",
         "env": [],
         "modules": {
