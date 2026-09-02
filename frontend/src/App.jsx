@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import './App.css';
+import logoUrl from '../../logo/KadeSI.jpg';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const STATUS_LABELS = { sat: 'Seated', stood: 'Standing', out: 'Out of office' };
@@ -12,6 +13,14 @@ const ACTIVE_DESKS = [1];
 const DESK_EMPLOYEES = { 1: 'Alex' };
 
 const API_BASE = 'http://127.0.0.1:8000';
+
+// Огледало на токените в App.css (:root) — Recharts иска реални стойности, не var()
+const COLOR_SEATED = '#A855F7';
+const COLOR_STANDING = '#22D3EE';
+const COLOR_NEUTRAL = '#3E4048';
+const COLOR_MUTED = '#7C6BA6';
+const COLOR_SURFACE = '#1A1224';
+const COLOR_BORDER = '#2E2142';
 
 function StatusDot({ status }) {
   return <span className={`status-dot status-dot--${status}`} />;
@@ -27,9 +36,9 @@ function StatCard({ label, value, accent }) {
 }
 
 function statusAccent(status) {
-  if (status === 'sat') return '#E8A33D';
-  if (status === 'stood') return '#4FB286';
-  return '#3E4048';
+  if (status === 'sat') return COLOR_SEATED;
+  if (status === 'stood') return COLOR_STANDING;
+  return COLOR_NEUTRAL;
 }
 
 function formatElapsed(seconds) {
@@ -51,11 +60,27 @@ function formatTime(isoString) {
 }
 
 function Sidebar({ active, onSelect }) {
+  const [logoFailed, setLogoFailed] = useState(false);
+
   return (
     <aside className="sidebar">
       <div className="sidebar__brand">
-        <div className="sidebar__mark">D</div>
-        <span>Desk Presence</span>
+        {logoFailed ? (
+          <>
+            <div className="sidebar__mark">K</div>
+            <span>KadeSI</span>
+          </>
+        ) : (
+          <img
+            src={logoUrl}
+            alt="KadeSI"
+            className="sidebar__logo"
+            onError={() => {
+              console.error('[KadeSI] Логото не се зареди от', logoUrl);
+              setLogoFailed(true);
+            }}
+          />
+        )}
       </div>
       <nav className="sidebar__nav">
         {NAV_ITEMS.map((item) => (
@@ -95,7 +120,7 @@ function Overview() {
     <div className="doc">
       <h2 className="section-title section-title--first">Какво прави системата</h2>
       <p className="doc__lead">
-        Desk Presence следи кога едно работно бюро се използва и как. Физически бутон
+        KadeSI следи кога едно работно бюро се използва и как. Физически бутон
         на бюрото отчита сядане и ставане, както и началото и края на работния ден.
         Всяко събитие се записва трайно, а приложението показва живото състояние и
         историята на работните сесии.
@@ -220,7 +245,7 @@ function DeskDetail({ deskId }) {
         <StatCard
           label="Duration"
           value={status?.elapsed_seconds != null ? formatElapsed(status.elapsed_seconds) : 'No active session'}
-          accent="#7C86A6"
+          accent={COLOR_MUTED}
         />
       </div>
 
@@ -245,12 +270,12 @@ function DeskDetail({ deskId }) {
                       outerRadius={90}
                       paddingAngle={3}
                     >
-                      <Cell fill="#E8A33D" />
-                      <Cell fill="#4FB286" />
+                      <Cell fill={COLOR_SEATED} />
+                      <Cell fill={COLOR_STANDING} />
                     </Pie>
                     <Tooltip
                       formatter={(value) => formatDuration(value)}
-                      contentStyle={{ background: '#1A1B21', border: '1px solid #24262E', borderRadius: 8 }}
+                      contentStyle={{ background: COLOR_SURFACE, border: `1px solid ${COLOR_BORDER}`, borderRadius: 8 }}
                     />
                     <Legend />
                   </PieChart>
@@ -348,9 +373,9 @@ function App() {
 
       <main className="main">
         <header className="app-header">
-          <div className="app-header__mark">D</div>
+          <div className="app-header__mark">K</div>
           <div>
-            <h1>Desk Presence</h1>
+            <h1>KadeSI</h1>
             <p className="app-header__sub">Office floor, live</p>
           </div>
         </header>
