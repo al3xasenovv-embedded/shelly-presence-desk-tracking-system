@@ -1,0 +1,28 @@
+# about_me.md
+
+## Кой съм
+
+Alex — Solution Engineer в Shelly Group. Позицията беше спечелена директно чрез технически интервю проект: изградих цялостна smart home система от нулата, използвайки Shelly BLU екосистемата (BLU Gateway Gen3, BLU Button Tough 1 ZB, BLU Door/Window ZB, BLU H&T ZB, Plug S Gen3). Проектът включваше всички 11 изисквания плюс бонус фийчъри (три-режимен термостат, IFTTT push нотификации), пълна документация с ADR-и и Mermaid диаграми, Python monitoring приложение с CustomTkinter UI. Публично на GitHub: `al3xasenovv-embedded/shelly-smart-home-system`. Офертата дойде директно вследствие на този проект.
+
+## Технически бекграунд преди Shelly
+
+- **C** — основен предишен език
+- **Git** — базово ползване
+- Нищо от IoT/MQTT/Node-RED/backend света преди проекта за интервюто — всичко това (mJS gateway scripting, MQTT, Node-RED, SQL, Docker) е научено в движение по време на интервю проекта и последвалите учебни сесии
+
+## Career цел — следващите ~2 години
+
+**Solution Engineer → Solution Engineer Expert**, с паралелно изграждане на **Full Stack IoT Developer** умения, с крайна цел преход към **Product Owner**.
+
+Пътят Solution Engineer → Product Owner минава през демонстрирано разбиране на "защо" зад feature requests, не само "какво" клиентите искат — директният контакт с реални клиентски проблеми е силна основа за това.
+
+## Защо точно desk-presence-tracking-system проектът
+
+Учебен/пилотен проект, изграждан постепенно и органично — всяка нова технология (Node-RED → PostgreSQL → Docker → FastAPI → React) е добавяна като следваща логична стъпка в изграждането на full-stack IoT профил, а не следвана по предварителен строг план. Целта е практическо покритие на целия стек — от физическо устройство до frontend — за да подкрепи прехода към Full Stack IoT Developer и по-нататък Product Owner.
+
+## Начин на работа, установен досега
+
+- Малки, тематични git commit-и (Conventional Commits формат)
+- ADR-и за всяко нетривиално архитектурно решение
+- Документация на проблемите докато се решават (troubleshooting навик), не после
+- Учене чрез практика — концепции, въведени през работещи имплементации, не теория първо
