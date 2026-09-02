@@ -11,8 +11,28 @@ covers a single desk and a single user, on a schema designed for more.
 
 ## Dashboard
 
-<!-- TODO: add screenshot -->
-![Dashboard](screenshot.png)
+The React frontend has three tabs, all served from the read-only FastAPI layer.
+
+### Overview
+
+A plain description of what the system does and how the pieces fit together.
+
+![Overview tab](frontend/dashboard-img/overview-tab.png)
+
+### Desks
+
+Live status for a desk: the current state and how long it has held, the
+sit/stand split of the last completed session, and recent session history.
+Desks 2-6 are disabled placeholders until there is hardware behind them.
+
+![Desks tab](frontend/dashboard-img/Desk-tab.png)
+
+### Reports
+
+CSV export — a single session, one employee over a period, or every employee
+over a period.
+
+![Reports tab](frontend/dashboard-img/report-tab.png)
 
 ## Functional Requirements
 
